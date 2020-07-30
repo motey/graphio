@@ -38,6 +38,9 @@ class Container:
             if set(nodeset.labels) == set(labels) and set(nodeset.merge_keys) == set(merge_keys):
                 return nodeset
 
+    def get_relationshipset(self, rel_type: str):
+        return next([r for r in self.relationshipsets if r.rel_type == rel_type], None)
+
     def add(self, object):
         self.objects.append(object)
 
@@ -55,6 +58,59 @@ class Container:
     def create_relationshipsets(self):
         for relationshipset in self.relationshipsets:
             relationshipset.create()
+
+    def create_nodeset(self):
+        for relationshipset in self.relationshipsets:
+            relationshipset.create()
+
+    def add_node(self, labels: list[str], properties: dict, merge_keys: list[str] = None):
+        ns = self.get_nodeset(labels, merge_keys)
+        if ns is None:
+            ns = NodeSet(labels, merge_keys)
+            self.add(ns)
+        ns.add_node(properties)
+
+    def add_relationship(
+        self,
+        rel_type: str,
+        properties: dict,
+        start_node_labels: list(str) = None,
+        end_node_labels: list(str) = None,
+        start_node_properties: list(str) = None,
+        end_node_properties: list(str) = None,
+    ):
+        rs = self.get_relationshipset(rel_type)
+        if rs is None:
+            if None not in (
+                start_node_labels,
+                end_node_labels,
+                start_node_properties,
+                end_node_properties,
+            ):
+                rs = RelationshipSet(
+                    rel_type=rel_type,
+                    start_node_labels=start_node_labels,
+                    end_node_labels=end_node_labels,
+                    start_node_properties=start_node_properties,
+                    end_node_properties=end_node_properties,
+                )
+                self.add(rs)
+            else:
+                ValueError(
+                    "Could not create Relationshipset. Missing parameters {}".format(
+                        [
+                            list(param.keys())[0]
+                            for param in [
+                                {"start_node_labels": start_node_labels},
+                                {"end_node_labels": end_node_labels},
+                                {"start_node_properties": start_node_properties},
+                                {"end_node_properties": end_node_properties},
+                            ]
+                            if param[list(param.keys())[0]] is None
+                        ]
+                    )
+                )
+        rs.add_relationship(properties)
 
 
 def get_instances_from_list(list, klass):
